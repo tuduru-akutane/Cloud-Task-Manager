@@ -1,101 +1,211 @@
-import Image from "next/image";
+"use client";
+import React, { useEffect, useState } from "react";
+import Header from "../components/Header";
+import Column from "../components/Column";
+import RightMenu from "../components/RightMenu";
+import AuthForm from "../components/AuthForm";
+import { AuthProvider, useAuth } from "../lib/auth";
+import type { Task } from "../components/TaskCard";
 
-export default function Home() {
+const STORAGE_KEY = "cloud-task-manager.tasks.v1";
+
+function makeId() {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export default function Page() {
+  const [tasks, setTasks] = useState<Task[]>(() => []);
+  // const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) setTasks(JSON.parse(raw));
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [tasks]);
+
+  // function addTask(title: string, status: Task["status"]) {
+  //   const t: Task = { id: makeId(), title, status };
+  //   setTasks((s) => [t, ...s]);
+  // }
+
+  // function deleteTask(id: string) {
+  //   setTasks((s) => s.filter((t) => t.id !== id));
+  // }
+
+  // function updateTitle(id: string, title: string) {
+  //   setTasks((s) => s.map((t) => (t.id === id ? { ...t, title } : t)));
+  // }
+
+  // function moveForward(id: string) {
+  //   setTasks((s) =>
+  //     s.map((t) => {
+  //       if (t.id !== id) return t;
+  //       if (t.status === "plan") return { ...t, status: "do" };
+  //       if (t.status === "do") return { ...t, status: "complete" };
+  //       return t;
+  //     })
+  //   );
+  // }
+
+  // function moveBack(id: string) {
+  //   setTasks((s) =>
+  //     s.map((t) => {
+  //       if (t.id !== id) return t;
+  //       if (t.status === "complete") return { ...t, status: "do" };
+  //       if (t.status === "do") return { ...t, status: "plan" };
+  //       return t;
+  //     })
+  //   );
+  // }
+
+  // const plan = tasks.filter((t) => t.status === "plan");
+  // const doing = tasks.filter((t) => t.status === "do");
+  // const complete = tasks.filter((t) => t.status === "complete");
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <AuthWrapper>
+      <InnerApp />
+    </AuthWrapper>
+  );
+}
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+function InnerApp() {
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [tasks]);
+
+  function addTask(title: string, status: Task["status"]) {
+    const t: Task = { id: makeId(), title, status };
+    setTasks((s) => [t, ...s]);
+  }
+
+  function deleteTask(id: string) {
+    setTasks((s) => s.filter((t) => t.id !== id));
+  }
+
+  function updateTitle(id: string, title: string) {
+    setTasks((s) => s.map((t) => (t.id === id ? { ...t, title } : t)));
+  }
+
+  function moveForward(id: string) {
+    setTasks((s) =>
+      s.map((t) => {
+        if (t.id !== id) return t;
+        if (t.status === "plan") return { ...t, status: "do" };
+        if (t.status === "do") return { ...t, status: "complete" };
+        return t;
+      })
+    );
+  }
+
+  function moveBack(id: string) {
+    setTasks((s) =>
+      s.map((t) => {
+        if (t.id !== id) return t;
+        if (t.status === "complete") return { ...t, status: "do" };
+        if (t.status === "do") return { ...t, status: "plan" };
+        return t;
+      })
+    );
+  }
+
+  const plan = tasks.filter((t) => t.status === "plan");
+  const doing = tasks.filter((t) => t.status === "do");
+  const complete = tasks.filter((t) => t.status === "complete");
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-700 via-slate-800 to-slate-900 text-white">
+      <HeaderWithAuth onOpenMenu={() => setMenuOpen(true)} />
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        <div className="bg-slate-700/40 rounded-xl p-6 shadow-xl backdrop-blur-sm">
+          <div className="flex gap-6">
+            <Column
+              title="Plan"
+              status="plan"
+              tasks={plan}
+              onAdd={addTask}
+              onDelete={deleteTask}
+              onUpdateTitle={updateTitle}
+              onMoveForward={moveForward}
+              onMoveBack={moveBack}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <Column
+              title="Do"
+              status="do"
+              tasks={doing}
+              onAdd={addTask}
+              onDelete={deleteTask}
+              onUpdateTitle={updateTitle}
+              onMoveForward={moveForward}
+              onMoveBack={moveBack}
+            />
+            <Column
+              title="Complete"
+              status="complete"
+              tasks={complete}
+              onAdd={addTask}
+              onDelete={deleteTask}
+              onUpdateTitle={updateTitle}
+              onMoveForward={moveForward}
+              onMoveBack={moveBack}
+            />
+          </div>
         </div>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+      <RightMenu open={menuOpen} onClose={() => setMenuOpen(false)}/>
+
+      <footer className="text-center text-slate-300 py-6">Built with Next.js + Tailwind</footer>
     </div>
   );
+}
+
+function AuthWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <AuthProvider>
+      <AuthGate>{children}</AuthGate>
+    </AuthProvider>
+  );
+}
+
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (!user)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <AuthForm />
+      </div>
+    );
+  return <>{children}</>;
+}
+
+function HeaderWithAuth({ onOpenMenu }: { onOpenMenu: () => void }) {
+  const { user, signOut } = useAuth();
+  return <Header onOpenMenu={onOpenMenu} user={user ? { email: user.email || undefined } : null} onSignOut={() => signOut()} />;
 }
